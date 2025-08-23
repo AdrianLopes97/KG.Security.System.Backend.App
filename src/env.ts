@@ -27,14 +27,6 @@ const envSchema = z.object({
   // JWT
   JWT_ACCESS_TOKEN_SECRET: z.string(),
   JWT_REFRESH_TOKEN_SECRET: z.string(),
-  /**
-   * expressed in seconds or a string describing a time span zeit/ms. Eg: 60, "2 days", "10h", "7d"
-   */
-  JWT_ACCESS_TOKEN_EXPIRES_IN: z.string().default("30m"), // 30 minutes
-  /**
-   * expressed in seconds or a string describing a time span zeit/ms. Eg: 60, "2 days", "10h", "7d"
-   */
-  JWT_REFRESH_TOKEN_EXPIRES_IN: z.string().default("7d"), // 7 days
 
   // Drizzle
   DATABASE_CONNECTION_STRING: z.string().url(),
