@@ -1,10 +1,9 @@
-import "./dayjs";
-
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { json, urlencoded } from "express";
 import { version } from "../package.json";
 import { AppModule } from "./app.module";
+import "./dayjs";
 import { env } from "./env";
 import { applyAppMiddlewares } from "./utils/apply-app-middlewares";
 
