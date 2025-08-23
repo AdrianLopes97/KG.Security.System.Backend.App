@@ -10,8 +10,10 @@ interface ImporterParams {
 }
 
 export function importer(params: ImporterParams): Type[] {
+  const normalizedPath = params.path.replace(/\\\\/g, "/").replace(/\\/g, "/");
+
   const filePaths = globSync(
-    `${params.path}/**/*.${params.suffix.toLowerCase()}.{js,ts}`,
+    `${normalizedPath}/**/*.${params.suffix.toLowerCase()}.{js,ts}`,
   );
 
   const classes: Type[] = [];
