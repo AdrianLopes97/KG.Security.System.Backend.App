@@ -38,7 +38,7 @@
     "dayjs": "^1.11.13",
     "decimal.js": "^10.6.0",
     "dotenv": "^17.2.1",
-    "drizzle-orm": "^0.29.5",
+    "drizzle-orm": "^0.44.4",
     "glob": "^11.0.3",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
