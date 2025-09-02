@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { date, index, pgTable, varchar } from "drizzle-orm/pg-core";
+import { index, pgTable, varchar } from "drizzle-orm/pg-core";
 import { commonFields } from "~/utils/common-fields";
 
 export const usersTable = pgTable(
@@ -9,7 +9,6 @@ export const usersTable = pgTable(
     phoneNumber: varchar("phone_number").unique().notNull(),
     email: varchar("email").unique().notNull(),
     name: varchar("name").notNull(),
-    birthDate: date("birth_date"),
     password: varchar("password"),
   },
   table => ({
