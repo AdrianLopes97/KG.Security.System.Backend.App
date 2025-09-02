@@ -1,5 +1,4 @@
-import { Body, Controller, Get, Post, Res, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
+import { Body, Controller, Post, Res } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { ApiTag } from "~/types/enums/api-tag.enum";
@@ -8,7 +7,6 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "~/database/drizzle";
 import { usersTable } from "~/database/drizzle/entities";
 import { ApiResultResponse } from "~/types/api-result-response";
-import { AuthGuardStrategy } from "~/types/enums/auth-guard-strategy.enums";
 import { compare } from "~/utils/hash";
 import { createAccessToken } from "~/utils/jwt";
 import { LoginRequest } from "../models/request-models/auth/login.request";
@@ -17,12 +15,6 @@ import { LoginResponse } from "../models/response-models/auth/login.response";
 @ApiTags(ApiTag.Auth)
 @Controller("api/auth")
 export class AuthController {
-  @Get()
-  @UseGuards(AuthGuard(AuthGuardStrategy.JWT))
-  getAuthHello(): string {
-    return "Hello World!";
-  }
-
   @Post("login")
   async login(
     @Body() body: LoginRequest,
