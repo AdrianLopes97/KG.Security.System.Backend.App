@@ -3,6 +3,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerModule } from "@nestjs/throttler";
 import path from "node:path";
 import { AppLoggerMiddleware } from "./api/middlewares/logger.middleware";
+import { JwtStrategy } from "./api/swagger/jwt.strategy";
 import { env } from "./env";
 import { importer } from "./importer";
 
@@ -44,6 +45,7 @@ const handlers = importer({
     ...cronTasks,
     ...gateways,
     ...handlers,
+    JwtStrategy,
   ],
 
   imports: [

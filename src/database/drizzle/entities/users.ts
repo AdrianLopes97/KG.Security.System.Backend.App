@@ -8,8 +8,9 @@ export const usersTable = pgTable(
     ...commonFields(),
     phoneNumber: varchar("phone_number").unique().notNull(),
     email: varchar("email").unique().notNull(),
-    name: varchar("name").notNull(),
-    password: varchar("password"),
+    firstName: varchar("first_name").notNull(),
+    lastName: varchar("last_name").notNull(),
+    password: varchar("password").notNull(),
   },
   table => ({
     emailIndex: index().on(table.email),
