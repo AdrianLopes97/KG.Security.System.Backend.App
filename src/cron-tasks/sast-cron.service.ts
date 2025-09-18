@@ -38,7 +38,7 @@ export class SastCronService extends CronTask {
       if (!processQueueCandidate) {
         console.log(`[${now.toISOString()}] No pending SAST scan found.`);
 
-        throw new Error("No pending SAST scan found");
+        return;
       } else {
         await drizzle
           .update(scanProcessQueuesTable)
@@ -58,6 +58,10 @@ export class SastCronService extends CronTask {
           })
           .where(eq(scanProcessQueuesTable.id, processQueueCandidate.id))
           .execute();
+
+        console.error(
+          `Project ${processQueueCandidate.project.id} does not have a GitHub URL configured.`,
+        );
 
         return;
       }
