@@ -106,7 +106,7 @@ export class UsersController {
     @Body() body: CreateUser,
     @Res() response: Response<ApiResultResponse<null>>,
   ): Promise<Response<ApiResultResponse<null>>> {
-    var existingUser = await drizzle.query.usersTable.findFirst({
+    const existingUser = await drizzle.query.usersTable.findFirst({
       where: eq(usersTable.email, body.email),
     });
 
