@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   index,
   integer,
+  json,
   pgTable,
   text,
   uuid,
@@ -22,17 +23,22 @@ export const vulnerabilitiesTable = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => projectsTable.id),
-    title: varchar("title", { length: 255 }).notNull(),
+    ruleId: varchar("rule_id", { length: 255 }).notNull(),
     severity: varchar("severity", { length: 32 })
       .$type<VulnerabilitySeverity>()
       .notNull(),
-    filePath: text("file_path"),
-    lineNumber: integer("line_number"),
+    description: text("description").notNull(),
+    filePath: text("file_path").notNull(),
+    lineNumber: integer("line_number").notNull(),
+    fingerprint: varchar("fingerprint", { length: 255 }),
+    priorityScore: integer("priority_score"),
+    codeFlow: json("code_flow"),
   },
   table => ({
     projectIdIdx: index().on(table.projectId),
     severityIdx: index().on(table.severity),
     filePathIdx: index().on(table.filePath),
+    ruleIdIdx: index().on(table.ruleId),
   }),
 );
 

@@ -15,6 +15,13 @@
       "when": 1756851247090,
       "tag": "0001_cuddly_mordo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1758237354984,
+      "tag": "0002_natural_whiplash",
+      "breakpoints": true
     }
   ]
 }
