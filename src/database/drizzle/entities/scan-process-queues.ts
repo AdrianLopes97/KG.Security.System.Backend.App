@@ -22,6 +22,7 @@ export const scanProcessQueuesTable = pgTable(
       .references(() => projectsTable.id),
     scanType: varchar("scan_type", { length: 32 }).$type<ScanType>().notNull(),
     status: varchar("status", { length: 32 }).$type<ScanStatus>().notNull(),
+    resultOutputPath: varchar("result_output_path"),
     requestedAt: timestamp("requested_at").notNull(),
     executedAt: timestamp("executed_at"),
     errorStack: text("error_stack"),

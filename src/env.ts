@@ -19,6 +19,10 @@ const envSchema = z.object({
   ENABLE_REQUEST_LOGS: booleanSchema,
 
   // CRON tasks
+  RUN_CRON_TASKS_IN_DEVELOPMENT: booleanSchema,
+  CRON_DISABLE_ALL: booleanSchema,
+  CRON_SAST_DISABLED: booleanSchema,
+  CRON_SAST_INTERVAL: z.string().default("*/5 * * * *"), // a cada 5 minutos
 
   // Crypto
   CRYPTO_SECRET_KEY: z.string(),
@@ -35,6 +39,9 @@ const envSchema = z.object({
 
   // Frontend web urls
   FRONTEND_WEB_BASE_URL: z.string().url(),
+
+  // Snyk
+  SNYK_TOKEN: z.string(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
