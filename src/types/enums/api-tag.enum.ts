@@ -3,4 +3,7 @@ export enum ApiTag {
   Users = "Users",
   Hello = "Hello",
   Project = "Project",
+  ScanProcessQueue = "ScanProcessQueue",
+  Vulnerability = "Vulnerability",
+  MonitoringRule = "MonitoringRule",
 }

@@ -1,4 +1,4 @@
-export class GetUserResponse {
+export interface GetUserResponse {
   id: string;
   createdAt: Date;
   firstName: string;

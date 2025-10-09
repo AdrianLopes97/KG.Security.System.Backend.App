@@ -1,4 +1,4 @@
-export class LoginResponse {
-  access_token: string;
-  expires_in: number;
+export interface LoginResponse {
+  accessToken: string;
+  expiresIn: number;
 }

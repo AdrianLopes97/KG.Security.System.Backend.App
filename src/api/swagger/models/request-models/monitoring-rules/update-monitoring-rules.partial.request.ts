@@ -1,7 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsBoolean, IsInt, Min } from "class-validator";
 
-export class CreateMonitoringRulesPartialRequest {
+export class UpdateMonitoringRulesPartialRequest {
+  @ApiProperty({
+    description: "ID da regra de monitoramento",
+    example: "rule-123",
+    required: false,
+  })
+  id?: string | null;
+
   @ApiProperty({
     description:
       "Intervalo de checagem em segundos para a regra de monitoramento",

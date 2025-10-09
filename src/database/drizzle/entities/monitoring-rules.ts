@@ -3,6 +3,7 @@ import {
   boolean,
   integer,
   pgTable,
+  text,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -18,6 +19,7 @@ export const monitoringRulesTable = pgTable(
       .references(() => projectsTable.id),
     checkIntervalSeconds: integer("check_interval_seconds").notNull(),
     timeoutThresholdSeconds: integer("timeout_threshold_seconds").notNull(),
+    slackWebhookUrl: text("slack_webhook_url"),
     isActive: boolean("is_active").notNull(),
   },
   table => ({

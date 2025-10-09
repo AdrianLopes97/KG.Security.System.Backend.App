@@ -41,8 +41,9 @@ export class AuthController {
     const access_token = createAccessToken(user.id);
     const expires_in = 3600; // 1 hora
 
-    return response
-      .status(200)
-      .json({ success: true, content: { access_token, expires_in } });
+    return response.status(200).json({
+      success: true,
+      content: { accessToken: access_token, expiresIn: expires_in },
+    });
   }
 }

@@ -14,12 +14,16 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { isUUID } from "class-validator";
-import { and, count, eq, isNull } from "drizzle-orm";
+import dayjs from "dayjs";
+import { and, between, count, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Response } from "express";
 import { drizzle } from "~/database/drizzle";
 import {
+  heartbeatsTable,
   monitoringRulesTable,
+  projectLogsTable,
   projectsTable,
+  vulnerabilitiesTable,
 } from "~/database/drizzle/entities";
 import { ApiResultResponse } from "~/types/api-result-response";
 import { RequestWithUser } from "~/types/app-context";
@@ -30,9 +34,9 @@ import { PaginationQuery } from "~/types/pagination-query.request";
 import { getPaginationOffset } from "~/utils/get-pagination-offset";
 import { getPaginationResponse } from "~/utils/get-pagination-response";
 import { CreateProjectRequest } from "../models/request-models/project/create-project.request";
-import { PagedResponse } from "../models/response-models/paged.response";
+import { UpdateProjectRequest } from "../models/request-models/project/update-project.request";
 import { GetProjectResponse } from "../models/response-models/projects/get-project.response";
-import { GetProjectsResponse } from "../models/response-models/projects/get-projects.response";
+import { GetProjectsMainTableResponse } from "../models/response-models/projects/get-projects-main-table.response";
 @ApiTags(ApiTag.Project)
 @Controller("api/project")
 @ApiBearerAuth()
@@ -77,7 +81,7 @@ export class ProjectController {
   @Put(":id")
   async updateProject(
     @Param("id") id: string,
-    @Body() body: CreateProjectRequest,
+    @Body() body: UpdateProjectRequest,
     @Res() response: Response<ApiResultResponse<null>>,
   ): Promise<Response<ApiResultResponse<null>>> {
     if (!isUUID(id)) {
@@ -109,16 +113,29 @@ export class ProjectController {
         .where(eq(projectsTable.id, id))
         .execute();
 
-      if (body.monitoringRules) {
+      if (body.monitoringRules?.id) {
         await tx
           .update(monitoringRulesTable)
           .set({
             checkIntervalSeconds: body.monitoringRules.checkIntervalSeconds,
             timeoutThresholdSeconds:
               body.monitoringRules.timeoutThresholdSeconds,
+            slackWebhookUrl: body.monitoringRules.slackWebhookUrl || null,
             isActive: body.monitoringRules.isActive,
           })
-          .where(eq(monitoringRulesTable.projectId, id))
+          .where(eq(monitoringRulesTable.id, body.monitoringRules.id))
+          .execute();
+      } else if (body.monitoringRules && !body.monitoringRules?.id) {
+        await tx
+          .insert(monitoringRulesTable)
+          .values({
+            projectId: id,
+            checkIntervalSeconds: body.monitoringRules.checkIntervalSeconds,
+            timeoutThresholdSeconds:
+              body.monitoringRules.timeoutThresholdSeconds,
+            slackWebhookUrl: body.monitoringRules.slackWebhookUrl || null,
+            isActive: body.monitoringRules.isActive,
+          })
           .execute();
       } else {
         await tx
@@ -143,25 +160,106 @@ export class ProjectController {
     @Query() query: PaginationQuery,
     @Req() { user }: RequestWithUser,
     @Res()
-    response: Response<ApiResultResponse<PagedResponse<GetProjectsResponse>>>,
-  ): Promise<Response<ApiResultResponse<PagedResponse<GetProjectsResponse>>>> {
+    response: Response<ApiResultResponse<GetProjectsMainTableResponse>>,
+  ): Promise<Response<ApiResultResponse<GetProjectsMainTableResponse>>> {
     const userId = user.id;
     const offset = getPaginationOffset(query);
 
-    const [data, [{ totalCount }]] = await Promise.all([
-      drizzle.query.projectsTable.findMany({
-        columns: {
-          name: true,
-          createdAt: true,
-          upTimeStatus: true,
-        },
-        where: and(
-          isNull(projectsTable.deletedAt),
-          eq(projectsTable.userId, userId),
-        ),
-        limit: query.limit,
-        offset: offset,
-      }),
+    const today = dayjs(new Date());
+
+    const [
+      data,
+      [{ totalCount }],
+      [{ totalProjectsOnlineCount }],
+      [{ vulnerabilityTotalCount }],
+      [{ logsTotalCount }],
+    ] = await Promise.all([
+      drizzle
+        .select({
+          id: projectsTable.id,
+          name: projectsTable.name,
+          systemUrl: projectsTable.systemUrl,
+          upTimeStatus: projectsTable.upTimeStatus,
+          createdAt: projectsTable.createdAt,
+          uptimePercentage: sql<number>`
+            COALESCE((
+              SELECT
+                CASE
+                  WHEN w.window_seconds > 0
+                    THEN ROUND(w.online_seconds / w.window_seconds * 100, 2)
+                  ELSE 0
+                END
+              FROM (
+                SELECT
+                  -- Janela: do primeiro heartbeat até agora
+                  EXTRACT(EPOCH FROM (NOW() - MIN(h.received_at))) AS window_seconds,
+                  SUM(
+                    EXTRACT(
+                      EPOCH FROM (
+                        LEAST(
+                          -- fim do intervalo considerado online
+                          COALESCE(h.next_received_at, NOW()),
+                          h.received_at + (mr.check_interval_seconds + mr.timeout_threshold_seconds) * INTERVAL '1 second'
+                        ) - h.received_at
+                      )
+                    )
+                  ) AS online_seconds
+                FROM (
+                  SELECT
+                    hb.received_at,
+                    LEAD(hb.received_at) OVER (ORDER BY hb.received_at) AS next_received_at
+                  FROM heartbeats hb
+                  WHERE
+                    hb.project_id = ${projectsTable.id}
+                    AND hb.deleted_at IS NULL
+                ) h
+                JOIN monitoring_rules mr
+                  ON mr.project_id = ${projectsTable.id}
+                 AND mr.is_active = true
+                 AND mr.deleted_at IS NULL
+              ) w
+            ), 0)
+          `,
+          totalVulnerabilities: sql<number>`
+          COUNT(DISTINCT CASE 
+            WHEN ${vulnerabilitiesTable.id} IS NOT NULL 
+             AND ${vulnerabilitiesTable.deletedAt} IS NULL 
+            THEN ${vulnerabilitiesTable.id} 
+          END)
+        `,
+          logsCount: sql<number>`
+          COUNT(DISTINCT CASE 
+            WHEN ${projectLogsTable.id} IS NOT NULL 
+             AND ${projectLogsTable.deletedAt} IS NULL 
+            THEN ${projectLogsTable.id} 
+          END)
+        `,
+          lastScanAt: sql<Date | null>`MAX(${vulnerabilitiesTable.createdAt})`,
+        })
+        .from(projectsTable)
+        .leftJoin(
+          projectLogsTable,
+          eq(projectLogsTable.projectId, projectsTable.id),
+        )
+        .leftJoin(
+          vulnerabilitiesTable,
+          eq(vulnerabilitiesTable.projectId, projectsTable.id),
+        )
+        .leftJoin(
+          heartbeatsTable,
+          eq(heartbeatsTable.projectId, projectsTable.id),
+        )
+        .where(
+          and(
+            isNull(projectsTable.deletedAt),
+            eq(projectsTable.userId, userId),
+          ),
+        )
+        .groupBy(projectsTable.id)
+        .orderBy(desc(projectsTable.createdAt))
+        .limit(query.limit)
+        .offset(offset)
+        .execute(),
       drizzle
         .select({ totalCount: count() })
         .from(projectsTable)
@@ -172,6 +270,52 @@ export class ProjectController {
           ),
         )
         .execute(),
+      drizzle
+        .select({ totalProjectsOnlineCount: count() })
+        .from(projectsTable)
+        .where(
+          and(
+            isNull(projectsTable.deletedAt),
+            eq(projectsTable.userId, userId),
+            eq(projectsTable.upTimeStatus, UpTimeStatus.UP),
+          ),
+        )
+        .execute(),
+      drizzle
+        .select({ vulnerabilityTotalCount: count() })
+        .from(projectsTable)
+        .innerJoin(
+          vulnerabilitiesTable,
+          eq(vulnerabilitiesTable.projectId, projectsTable.id),
+        )
+        .where(
+          and(
+            isNull(projectsTable.deletedAt),
+            eq(projectsTable.userId, userId),
+            isNull(vulnerabilitiesTable.deletedAt),
+          ),
+        )
+        .execute(),
+      drizzle
+        .select({ logsTotalCount: count() })
+        .from(projectsTable)
+        .innerJoin(
+          projectLogsTable,
+          eq(projectLogsTable.projectId, projectsTable.id),
+        )
+        .where(
+          and(
+            isNull(projectsTable.deletedAt),
+            eq(projectsTable.userId, userId),
+            isNull(projectLogsTable.deletedAt),
+            between(
+              projectLogsTable.createdAt,
+              today.subtract(24, "hour").toDate(),
+              today.toDate(),
+            ),
+          ),
+        )
+        .execute(),
     ]);
 
     const pagination = getPaginationResponse(totalCount, query);
@@ -179,8 +323,12 @@ export class ProjectController {
     return response.status(200).json({
       success: true,
       content: {
-        data,
-        pagination,
+        pagination: pagination,
+        projects: data,
+        vulnerabilityTotalCount: vulnerabilityTotalCount,
+        logsTotalCount: logsTotalCount,
+        totalCount: totalCount,
+        totalProjectsOnlineCount: totalProjectsOnlineCount,
       },
     });
   }
@@ -219,9 +367,11 @@ export class ProjectController {
 
     const monitoringRule = await drizzle.query.monitoringRulesTable.findFirst({
       columns: {
+        id: true,
         checkIntervalSeconds: true,
         timeoutThresholdSeconds: true,
         isActive: true,
+        slackWebhookUrl: true,
       },
       where: eq(monitoringRulesTable.projectId, id),
     });

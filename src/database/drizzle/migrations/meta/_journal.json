@@ -29,6 +29,13 @@
       "when": 1758238194983,
       "tag": "0003_far_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1759971474719,
+      "tag": "0004_normal_spectrum",
+      "breakpoints": true
     }
   ]
 }
