@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS "vuln_project_fingerprint_created_at_idx" ON "vulnerabilities" ("project_id","fingerprint","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "vuln_project_rule_file_line_created_at_idx" ON "vulnerabilities" ("project_id","rule_id","file_path","line_number","created_at");

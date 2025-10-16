@@ -11,6 +11,12 @@ export async function runSastScan(
 ): Promise<string> {
   const execAsync = promisify(exec);
 
+  // Cria uma versão segura do datetime para uso em nome de arquivo no Windows
+  // Substitui ':' e '.' por '-', e remove/caracteres inválidos para nomes de arquivo
+  const safeDatetime = String(datetime)
+    .replace(/[:.]/g, "-")
+    .replace(/[<>:"/\\|?*]/g, "_");
+
   try {
     // Garante que o diretório de saída exista
     const outputDir = path.join("sast-output");
@@ -19,7 +25,10 @@ export async function runSastScan(
     }
 
     // Caminho do arquivo de saída
-    const outputPath = path.join(outputDir, `${projectId}-${datetime}.json`);
+    const outputPath = path.join(
+      outputDir,
+      `${projectId}-${safeDatetime}.json`,
+    );
 
     // Autentica com o Snyk CLI
     const authCommand = `snyk auth ${env.SNYK_TOKEN}`;
@@ -45,7 +54,7 @@ export async function runSastScan(
     }
 
     const output = stdout || stderr;
-    fs.writeFileSync(outputPath, output);
+    fs.writeFileSync(outputPath, output, { encoding: "utf-8" });
     console.log(
       `[${projectId} - ${datetime}] Resultado da varredura salvo em: ${outputPath}`,
     );
@@ -61,8 +70,14 @@ export async function runSastScan(
         `[${projectId} - ${datetime}] Varredura Snyk SAST concluída. Vulnerabilidades encontradas.`,
       );
       const outputDir = path.join("sast-output");
-      const outputPath = path.join(outputDir, `${projectId}-${datetime}.json`);
-      fs.writeFileSync(outputPath, output);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      const outputPath = path.join(
+        outputDir,
+        `${projectId}-${safeDatetime}.json`,
+      );
+      fs.writeFileSync(outputPath, output, { encoding: "utf-8" });
       console.log(
         `[${projectId} - ${datetime}] Resultado da varredura salvo em: ${outputPath}`,
       );

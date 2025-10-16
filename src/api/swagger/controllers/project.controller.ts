@@ -35,6 +35,7 @@ import { getPaginationOffset } from "~/utils/get-pagination-offset";
 import { getPaginationResponse } from "~/utils/get-pagination-response";
 import { CreateProjectRequest } from "../models/request-models/project/create-project.request";
 import { UpdateProjectRequest } from "../models/request-models/project/update-project.request";
+import { GetProjectListResponse } from "../models/response-models/projects/get-project-list.response";
 import { GetProjectResponse } from "../models/response-models/projects/get-project.response";
 import { GetProjectsMainTableResponse } from "../models/response-models/projects/get-projects-main-table.response";
 @ApiTags(ApiTag.Project)
@@ -330,6 +331,36 @@ export class ProjectController {
         totalCount: totalCount,
         totalProjectsOnlineCount: totalProjectsOnlineCount,
       },
+    });
+  }
+
+  @UseGuards(AuthGuard(AuthGuardStrategy.JWT))
+  @Get("list")
+  async getProjectsList(
+    @Req() { user }: RequestWithUser,
+    @Res()
+    response: Response<ApiResultResponse<GetProjectListResponse[]>>,
+  ): Promise<Response<ApiResultResponse<GetProjectListResponse[]>>> {
+    const userId = user.id;
+    const [data] = await Promise.all([
+      drizzle
+        .select({
+          id: projectsTable.id,
+          name: projectsTable.name,
+        })
+        .from(projectsTable)
+        .where(
+          and(
+            isNull(projectsTable.deletedAt),
+            eq(projectsTable.userId, userId),
+          ),
+        )
+        .execute(),
+    ]);
+
+    return response.status(200).json({
+      success: true,
+      content: data,
     });
   }
 

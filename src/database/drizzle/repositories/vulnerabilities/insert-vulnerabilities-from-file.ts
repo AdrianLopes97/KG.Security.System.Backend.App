@@ -10,10 +10,12 @@ import {
  * Lê um arquivo SARIF e insere as vulnerabilidades no banco de dados.
  * @param filePath Caminho do arquivo SARIF.
  * @param scanId ID do scan relacionado.
+ * @param projectId ID do projeto relacionado.
  */
 export async function insertVulnerabilitiesFromFile(
   filePath: string,
   scanId: string,
+  projectId: string,
 ): Promise<void> {
   try {
     // Lê o arquivo SARIF
@@ -24,7 +26,7 @@ export async function insertVulnerabilitiesFromFile(
     const vulnerabilities: NewVulnerability[] = sarif.runs.flatMap(run =>
       run.results.map(result => ({
         scanId,
-        projectId: "", // Deve ser preenchido com o ID do projeto relacionado
+        projectId: projectId,
         ruleId: result.ruleId,
         severity: result.level,
         description: result.message.text,
@@ -37,6 +39,10 @@ export async function insertVulnerabilitiesFromFile(
       })),
     );
 
+    if (vulnerabilities.length === 0) {
+      console.log(`Nenhuma vulnerabilidade encontrada no scan ${scanId}.`);
+      return;
+    }
     // Insere no banco de dados
     await drizzle.insert(vulnerabilitiesTable).values(vulnerabilities);
     console.log(

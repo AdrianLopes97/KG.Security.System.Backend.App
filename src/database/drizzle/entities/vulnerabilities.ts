@@ -39,6 +39,21 @@ export const vulnerabilitiesTable = pgTable(
     severityIdx: index().on(table.severity),
     filePathIdx: index().on(table.filePath),
     ruleIdIdx: index().on(table.ruleId),
+    // Para identidade por fingerprint e ordenação pelo mais recente
+    projectFingerprintCreatedAtIdx: index(
+      "vuln_project_fingerprint_created_at_idx",
+    ).on(table.projectId, table.fingerprint, table.createdAt),
+
+    // Para fallback: ruleId + filePath + lineNumber e ordenação pelo mais recente
+    projectRuleFileLineCreatedAtIdx: index(
+      "vuln_project_rule_file_line_created_at_idx",
+    ).on(
+      table.projectId,
+      table.ruleId,
+      table.filePath,
+      table.lineNumber,
+      table.createdAt,
+    ),
   }),
 );
 

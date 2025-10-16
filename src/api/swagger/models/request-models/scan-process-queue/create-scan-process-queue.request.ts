@@ -1,43 +1,26 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString, IsUrl } from "class-validator";
-import { CreateMonitoringRulesPartialRequest } from "../monitoring-rules/create-monitoring-rules.partial.request";
+import { IsNotEmpty, IsUUID } from "class-validator";
+import { ScanType } from "~/types/enums/scan-type.enums";
 
 export class CreateScanProcessQueueRequest {
   @ApiProperty({
-    description: "Nome do projeto",
-    example: "Meu Projeto",
+    description: "ID do projeto associado ao processo de varredura",
+    example: "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
     required: true,
+    nullable: false,
   })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
-  name: string;
+  projectId: string;
 
   @ApiProperty({
-    description: "URL do repositório GitHub",
-    example: "https://github.com/usuario/repositorio",
-    required: false,
-    nullable: true,
+    description:
+      "Regras de monitoramento opcionais para o processo de varredura",
+    required: true,
+    enum: ScanType,
+    example: ScanType.STATIC,
+    nullable: false,
   })
-  @IsOptional()
-  @IsUrl()
-  githubUrl?: string | null;
-
-  @ApiProperty({
-    description: "URL do sistema monitorado",
-    example: "https://meusistema.com",
-    required: false,
-    nullable: true,
-  })
-  @IsOptional()
-  @IsUrl()
-  systemUrl?: string | null;
-
-  @ApiProperty({
-    description: "Regras de monitoramento a serem criadas",
-    type: CreateMonitoringRulesPartialRequest,
-    required: false,
-    nullable: true,
-  })
-  @IsOptional()
-  monitoringRules?: CreateMonitoringRulesPartialRequest | null;
+  @IsNotEmpty()
+  scanType: ScanType;
 }

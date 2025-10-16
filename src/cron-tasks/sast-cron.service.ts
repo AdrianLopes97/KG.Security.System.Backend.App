@@ -8,6 +8,7 @@ import { env } from "~/env";
 import { ScanStatus } from "~/types/enums/scan-status.enums";
 import { ScanType } from "~/types/enums/scan-type.enums";
 import { cloneOrUpdateRepo } from "~/utils/clone-or-update-repo";
+import { extractErrorInfo } from "~/utils/extract-error-info";
 import { runSastScan } from "~/utils/run-sast-scan.snyk";
 import { CronTask } from "./cron-task";
 
@@ -80,11 +81,36 @@ export class SastCronService extends CronTask {
       await insertVulnerabilitiesFromFile(
         tempResultPath,
         processQueueCandidate.id,
+        processQueueCandidate.project.id,
       );
+
+      await drizzle
+        .update(scanProcessQueuesTable)
+        .set({
+          status: ScanStatus.COMPLETED,
+          executedAt: new Date(),
+        })
+        .where(eq(scanProcessQueuesTable.id, processQueueCandidate.id))
+        .execute();
     } catch (error) {
       await this.logError(error, {
         scanProcessQueueId: processQueueCandidate?.id,
       });
+
+      if (processQueueCandidate) {
+        const errorDetails = extractErrorInfo(error);
+        await drizzle
+          .update(scanProcessQueuesTable)
+          .set({
+            status: ScanStatus.FAILED,
+            executedAt: new Date(),
+            errorName: `${errorDetails.errorName} -> ${errorDetails.errorMessage}`,
+            errorStringified: errorDetails.errorStringified,
+            errorStack: errorDetails.errorStack,
+          })
+          .where(eq(scanProcessQueuesTable.id, processQueueCandidate.id))
+          .execute();
+      }
     } finally {
       try {
         if (tempClonePath) {
