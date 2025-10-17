@@ -60,7 +60,7 @@ export class ProjectController {
           systemUrl: body.systemUrl || null,
           userId: userId,
           upTimeStatus: UpTimeStatus.UNKNOWN,
-          weebhookKey: crypto.randomUUID(),
+          webhookKey: crypto.randomUUID(),
         })
         .returning({ id: projectsTable.id });
 
@@ -414,6 +414,40 @@ export class ProjectController {
         ...project,
         monitoringRules: monitoringRule || null,
       },
+    });
+  }
+
+  @UseGuards(AuthGuard(AuthGuardStrategy.JWT))
+  @Get("key/:id")
+  async getProjectKeyById(
+    @Param("id") id: string,
+    @Res()
+    response: Response<ApiResultResponse<string>>,
+  ): Promise<Response<ApiResultResponse<string>>> {
+    if (!isUUID(id)) {
+      return response.status(400).json({
+        success: false,
+        message: "ID inválido",
+      });
+    }
+
+    const project = await drizzle.query.projectsTable.findFirst({
+      columns: {
+        webhookKey: true,
+      },
+      where: eq(projectsTable.id, id),
+    });
+
+    if (!project) {
+      return response.status(400).json({
+        success: false,
+        message: "Projeto não encontrado",
+      });
+    }
+
+    return response.status(200).json({
+      success: true,
+      content: project.webhookKey,
     });
   }
 
