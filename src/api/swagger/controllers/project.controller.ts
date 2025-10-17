@@ -60,6 +60,7 @@ export class ProjectController {
           systemUrl: body.systemUrl || null,
           userId: userId,
           upTimeStatus: UpTimeStatus.UNKNOWN,
+          weebhookKey: crypto.randomUUID(),
         })
         .returning({ id: projectsTable.id });
 

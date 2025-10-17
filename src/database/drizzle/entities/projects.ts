@@ -15,6 +15,7 @@ export const projectsTable = pgTable("projects", {
   upTimeStatus: varchar("up_time_status", { length: 32 })
     .$type<UpTimeStatus>()
     .notNull(),
+  webhookKey: uuid("webhook_key").notNull(),
 });
 
 export const projectsTableRelations = relations(projectsTable, ({ one }) => ({

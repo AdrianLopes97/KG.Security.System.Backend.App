@@ -66,8 +66,8 @@ export class ObservabilitiesController {
       drizzle
         .select({
           id: projectLogsTable.id,
-          name: projectLogsTable.Name,
-          description: projectLogsTable.Message,
+          name: projectLogsTable.name,
+          description: projectLogsTable.message,
           createdAt: projectLogsTable.createdAt,
           level: projectLogsTable.level,
         })

@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ADD COLUMN "webhook_key" uuid DEFAULT '69cdec77-f400-4d59-a433-b5418fc3b4f1' NOT NULL;

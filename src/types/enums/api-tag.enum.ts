@@ -7,4 +7,5 @@ export enum ApiTag {
   Vulnerability = "Vulnerability",
   MonitoringRule = "MonitoringRule",
   Observability = "Observability",
+  Webhooks = "Webhooks",
 }

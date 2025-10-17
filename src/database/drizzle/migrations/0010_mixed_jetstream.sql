@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ALTER COLUMN "webhook_key" DROP DEFAULT;

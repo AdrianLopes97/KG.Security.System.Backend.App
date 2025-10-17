@@ -12,11 +12,11 @@ export const projectLogsTable = pgTable("project_logs", {
   level: varchar("level", { length: 32 })
     .$type<ObservabilityLevels>()
     .notNull(),
-  Message: text("message").notNull(),
-  Stack: text("stack"),
-  Name: varchar("name").notNull(),
-  Origin: varchar("origin").notNull(),
-  Stringified: text("stringified"),
+  message: text("message").notNull(),
+  stack: text("stack"),
+  name: varchar("name").notNull(),
+  origin: varchar("origin").notNull(),
+  stringified: text("stringified"),
 
   info: json("info").$type<Record<string, any>>(),
 });
