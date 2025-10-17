@@ -6,4 +6,5 @@ export enum ApiTag {
   ScanProcessQueue = "ScanProcessQueue",
   Vulnerability = "Vulnerability",
   MonitoringRule = "MonitoringRule",
+  Observability = "Observability",
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "project_logs" ADD COLUMN "level" varchar(32) NOT NULL;

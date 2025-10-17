@@ -23,7 +23,7 @@ import { GetVulnerabilitiesMainTableResponse } from "../models/response-models/v
 export class VulnerabilitiesController {
   @UseGuards(AuthGuard(AuthGuardStrategy.JWT))
   @Get()
-  async getProjects(
+  async getVulnerabilities(
     @Query("projectId") projectId: string,
     @Query() query: PaginationQuery,
     @Res()
