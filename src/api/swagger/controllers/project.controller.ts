@@ -185,40 +185,49 @@ export class ProjectController {
           createdAt: projectsTable.createdAt,
           uptimePercentage: sql<number>`
             COALESCE((
-              SELECT
-                CASE
-                  WHEN w.window_seconds > 0
-                    THEN ROUND(w.online_seconds / w.window_seconds * 100, 2)
-                  ELSE 0
-                END
+              SELECT CASE
+                WHEN w.window_seconds > 0 THEN ROUND(
+                  GREATEST(w.window_seconds - w.total_down_seconds, 0) / w.window_seconds * 100,
+                2)
+                ELSE 0
+              END
               FROM (
                 SELECT
-                  -- Janela: do primeiro heartbeat até agora
-                  EXTRACT(EPOCH FROM (NOW() - MIN(h.received_at))) AS window_seconds,
-                  SUM(
-                    EXTRACT(
-                      EPOCH FROM (
-                        LEAST(
-                          -- fim do intervalo considerado online
-                          COALESCE(h.next_received_at, NOW()),
-                          h.received_at + (mr.check_interval_seconds + mr.timeout_threshold_seconds) * INTERVAL '1 second'
-                        ) - h.received_at
-                      )
-                    )
-                  ) AS online_seconds
-                FROM (
-                  SELECT
-                    hb.received_at,
-                    LEAD(hb.received_at) OVER (ORDER BY hb.received_at) AS next_received_at
-                  FROM heartbeats hb
-                  WHERE
-                    hb.project_id = ${projectsTable.id}
-                    AND hb.deleted_at IS NULL
-                ) h
-                JOIN monitoring_rules mr
-                  ON mr.project_id = ${projectsTable.id}
-                 AND mr.is_active = true
-                 AND mr.deleted_at IS NULL
+                  -- Janela: do primeiro heartbeat até agora (0 se não existir heartbeat)
+                  EXTRACT(EPOCH FROM (NOW() - COALESCE((
+                    SELECT MIN(hb.received_at)
+                    FROM heartbeats hb
+                    WHERE hb.project_id = ${projectsTable.id}
+                      AND hb.deleted_at IS NULL
+                  ), NOW()))) AS window_seconds,
+                  (
+                    -- Downtime fechado
+                    COALESCE((
+                      SELECT SUM(COALESCE(mi.duration_seconds, EXTRACT(EPOCH FROM (mi.ended_at - mi.started_at))))
+                      FROM monitoring_incidents mi
+                      WHERE mi.project_id = ${projectsTable.id}
+                        AND mi.is_open = false
+                        AND mi.deleted_at IS NULL
+                    ), 0)
+                    +
+                    -- Downtime aberto até agora (clamp pelo primeiro heartbeat)
+                    COALESCE((
+                      SELECT EXTRACT(EPOCH FROM (NOW() - GREATEST(
+                        mi2.started_at,
+                        COALESCE((
+                          SELECT MIN(hb2.received_at)
+                          FROM heartbeats hb2
+                          WHERE hb2.project_id = ${projectsTable.id}
+                            AND hb2.deleted_at IS NULL
+                        ), NOW())
+                      )))
+                      FROM monitoring_incidents mi2
+                      WHERE mi2.project_id = ${projectsTable.id}
+                        AND mi2.is_open = true
+                        AND mi2.deleted_at IS NULL
+                      LIMIT 1
+                    ), 0)
+                  ) AS total_down_seconds
               ) w
             ), 0)
           `,

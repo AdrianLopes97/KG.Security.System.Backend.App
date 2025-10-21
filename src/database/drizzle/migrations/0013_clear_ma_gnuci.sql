@@ -1,0 +1,1 @@
+ALTER TABLE "monitoring_alerts" ALTER COLUMN "channel" SET NOT NULL;

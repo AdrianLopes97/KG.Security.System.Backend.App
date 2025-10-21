@@ -8,4 +8,5 @@ export enum ApiTag {
   MonitoringRule = "MonitoringRule",
   Observability = "Observability",
   Webhooks = "Webhooks",
+  Monitoring = "Monitoring",
 }
