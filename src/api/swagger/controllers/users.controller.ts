@@ -3,8 +3,10 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from "@nestjs/common";
@@ -15,6 +17,7 @@ import { Response } from "express";
 import { drizzle } from "~/database/drizzle";
 import { usersTable } from "~/database/drizzle/entities";
 import { ApiResultResponse } from "~/types/api-result-response";
+import { RequestWithUser } from "~/types/app-context";
 import { ApiTag } from "~/types/enums/api-tag.enum";
 import { AuthGuardStrategy } from "~/types/enums/auth-guard-strategy.enums";
 import { getPaginationOffset } from "~/utils/get-pagination-offset";
@@ -71,9 +74,22 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard(AuthGuardStrategy.JWT))
+  @Get("me")
+  async getMe(
+    @Req() { user }: RequestWithUser,
+    @Res()
+    response: Response<ApiResultResponse<GetUserResponse>>,
+  ): Promise<Response<ApiResultResponse<GetUserResponse>>> {
+    return response.status(200).json({
+      success: true,
+      content: user,
+    });
+  }
+
+  @UseGuards(AuthGuard(AuthGuardStrategy.JWT))
   @Get(":id")
   async getUserById(
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
     @Res() response: Response<ApiResultResponse<GetUserResponse>>,
   ): Promise<Response<ApiResultResponse<GetUserResponse>>> {
     const user = await drizzle.query.usersTable.findFirst({
