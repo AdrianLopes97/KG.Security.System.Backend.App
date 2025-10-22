@@ -1,3 +1,10 @@
+# Dast scan reports and related files
+/zap-reports
+
+# SAST scan reports and related files
+/sast-output
+/temp
+
 # compiled output
 /dist
 /node_modules
