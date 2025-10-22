@@ -9,6 +9,7 @@ import { ApiResultResponse } from "~/types/api-result-response";
 import { ApiTag } from "~/types/enums/api-tag.enum";
 import { AuthGuardStrategy } from "~/types/enums/auth-guard-strategy.enums";
 import { FilterPeriods } from "~/types/enums/filter-periods.enum";
+import { ObservabilityLevels } from "~/types/enums/observabilities-levels.enums";
 import { PaginationQuery } from "~/types/pagination-query.request";
 import { getPaginationOffset } from "~/utils/get-pagination-offset";
 import { getPaginationResponse } from "~/utils/get-pagination-response";
@@ -85,17 +86,32 @@ export class ObservabilitiesController {
       drizzle
         .select({ errorLogs: count() })
         .from(projectLogsTable)
-        .where(whereClause)
+        .where(
+          and(
+            whereClause,
+            eq(projectLogsTable.level, ObservabilityLevels.ERROR),
+          ),
+        )
         .execute(),
       drizzle
         .select({ alertLogs: count() })
         .from(projectLogsTable)
-        .where(whereClause)
+        .where(
+          and(
+            whereClause,
+            eq(projectLogsTable.level, ObservabilityLevels.WARNING),
+          ),
+        )
         .execute(),
       drizzle
         .select({ infoLogs: count() })
         .from(projectLogsTable)
-        .where(whereClause)
+        .where(
+          and(
+            whereClause,
+            eq(projectLogsTable.level, ObservabilityLevels.INFO),
+          ),
+        )
         .execute(),
     ]);
 
