@@ -57,6 +57,7 @@ export class VulnerabilitiesController {
           .select({
             id: vulnerabilitiesTable.id,
             createdAt: vulnerabilitiesTable.createdAt,
+            scanType: vulnerabilitiesTable.scanType,
             severity: vulnerabilitiesTable.severity,
             ruleId: vulnerabilitiesTable.ruleId,
             description: vulnerabilitiesTable.description,
@@ -87,6 +88,7 @@ export class VulnerabilitiesController {
             id: base.id,
             createdAt: base.createdAt,
             severity: base.severity,
+            scanType: base.scanType,
             ruleId: base.ruleId,
             description: base.description,
             isRecurrent: base.isRecurrent,

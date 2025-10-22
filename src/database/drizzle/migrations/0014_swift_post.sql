@@ -1,0 +1,1 @@
+ALTER TABLE "vulnerabilities" ADD COLUMN "scan_type" varchar(32) NOT NULL;

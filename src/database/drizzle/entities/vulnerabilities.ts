@@ -8,6 +8,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { ScanType } from "~/types/enums/scan-type.enums";
 import { commonFields } from "~/utils/common-fields";
 import { VulnerabilitySeverity } from "../../../types/enums/vulnerabilities.enums";
 import { projectsTable } from "./projects";
@@ -24,6 +25,7 @@ export const vulnerabilitiesTable = pgTable(
       .notNull()
       .references(() => projectsTable.id),
     ruleId: varchar("rule_id", { length: 255 }).notNull(),
+    scanType: varchar("scan_type", { length: 32 }).$type<ScanType>().notNull(),
     severity: varchar("severity", { length: 32 })
       .$type<VulnerabilitySeverity>()
       .notNull(),

@@ -352,21 +352,16 @@ export class ProjectController {
     response: Response<ApiResultResponse<GetProjectListResponse[]>>,
   ): Promise<Response<ApiResultResponse<GetProjectListResponse[]>>> {
     const userId = user.id;
-    const [data] = await Promise.all([
-      drizzle
-        .select({
-          id: projectsTable.id,
-          name: projectsTable.name,
-        })
-        .from(projectsTable)
-        .where(
-          and(
-            isNull(projectsTable.deletedAt),
-            eq(projectsTable.userId, userId),
-          ),
-        )
-        .execute(),
-    ]);
+    const data = await drizzle
+      .select({
+        id: projectsTable.id,
+        name: projectsTable.name,
+      })
+      .from(projectsTable)
+      .where(
+        and(isNull(projectsTable.deletedAt), eq(projectsTable.userId, userId)),
+      )
+      .execute();
 
     return response.status(200).json({
       success: true,

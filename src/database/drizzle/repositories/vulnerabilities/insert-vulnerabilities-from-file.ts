@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import { Sarif } from "~/models/sast-results.model";
+import { ScanType } from "~/types/enums/scan-type.enums";
 import { drizzle } from "../..";
 import {
   NewVulnerability,
@@ -28,6 +29,7 @@ export async function insertVulnerabilitiesFromFile(
         scanId,
         projectId: projectId,
         ruleId: result.ruleId,
+        scanType: ScanType.DYNAMIC,
         severity: result.level,
         description: result.message.text,
         filePath:
