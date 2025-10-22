@@ -25,6 +25,8 @@ const envSchema = z.object({
   CRON_SAST_INTERVAL: z.string().default("*/5 * * * *"), // a cada 5 minutos
   CRON_DAST_DISABLED: booleanSchema,
   CRON_DAST_INTERVAL: z.string().default("*/5 * * * *"), // a cada 5 minutos
+  CRON_MONITORING_DISABLED: booleanSchema,
+  CRON_MONITORING_INTERVAL: z.string().default("*/1 * * * *"), // a cada 1 minuto
 
   // Crypto
   CRYPTO_SECRET_KEY: z.string(),
