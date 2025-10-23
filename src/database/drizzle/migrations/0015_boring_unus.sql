@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS "monitoring_incidents_project_id_is_open_index";

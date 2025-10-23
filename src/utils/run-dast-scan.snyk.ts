@@ -32,21 +32,37 @@ export const runZapScan = async (
 ): Promise<{ jsonPath: string }> => {
   return new Promise(resolve => {
     exec(command, (error, stdout, stderr) => {
-      console.log(
-        `[ZAP-SCAN] O processo de scan para '${targetUrl}' foi finalizado.`,
-      );
       const jsonPath = path.join(reportsDir, "report.json");
-      if (error) {
-        console.error(
-          `[ERRO] Falha ao executar o scan para '${targetUrl}': ${error.message}`,
-        );
-        console.error(`[ERRO] Stderr: ${stderr}`);
-        return resolve({ jsonPath });
+      const errCodeRaw = (error as unknown as { code?: number | string })?.code;
+      let errCode = 0;
+      if (typeof errCodeRaw === "number") {
+        errCode = errCodeRaw;
+      } else if (typeof errCodeRaw === "string") {
+        const parsed = Number.parseInt(errCodeRaw, 10);
+        errCode = Number.isNaN(parsed) ? 0 : parsed;
       }
-      console.log(
-        `[SUCESSO] Scan para '${targetUrl}' concluído. Relatórios salvos em: ${reportsDir}`,
-      );
-      console.log(`[SUCESSO] Stdout: ${stdout}`);
+      const acceptableExitCodes = new Set([0, 1, 2]);
+
+      console.log(`[ZAP-SCAN] Comando executado: ${command}`);
+      if (stdout) console.log(`[ZAP-SCAN] Stdout:\n${stdout}`);
+      if (stderr) console.log(`[ZAP-SCAN] Stderr:\n${stderr}`);
+
+      if (error && !acceptableExitCodes.has(errCode)) {
+        console.error(
+          `[ERRO] Execução do ZAP retornou código ${errCode} para '${targetUrl}'. Trataremos como falha do processo (não de achados). Detalhes: ${JSON.stringify(
+            error,
+          )}`,
+        );
+      } else if (error && acceptableExitCodes.has(errCode)) {
+        console.log(
+          `[ZAP-SCAN] ZAP finalizado com exit code ${errCode} (interpretação: findings/avisos). Prosseguindo com o relatório JSON se disponível.`,
+        );
+      } else {
+        console.log(
+          `[ZAP-SCAN] Scan para '${targetUrl}' concluído. Relatórios salvos em: ${reportsDir}`,
+        );
+      }
+
       resolve({ jsonPath });
     });
   });

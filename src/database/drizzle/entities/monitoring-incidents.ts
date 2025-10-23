@@ -1,4 +1,4 @@
-import { eq, relations } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -6,7 +6,6 @@ import {
   pgTable,
   text,
   timestamp,
-  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { commonFields } from "~/utils/common-fields";
@@ -27,9 +26,6 @@ export const monitoringIncidentsTable = pgTable(
     reason: text("reason"),
   },
   table => ({
-    oneOpenIncidentByProject: uniqueIndex()
-      .on(table.projectId, table.isOpen)
-      .where(eq(table.isOpen, true)),
     byProjectStartedAt: index(
       "monitoring_incidents_project_id_started_at_index",
     ).on(table.projectId, table.startedAt),
