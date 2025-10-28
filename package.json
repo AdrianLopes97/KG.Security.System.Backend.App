@@ -37,7 +37,7 @@
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
     "cron": "^4.3.3",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.18",
     "decimal.js": "^10.6.0",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.29.5",
