@@ -183,90 +183,86 @@ export class ProjectController {
           systemUrl: projectsTable.systemUrl,
           upTimeStatus: projectsTable.upTimeStatus,
           createdAt: projectsTable.createdAt,
-          uptimePercentage: sql<number>`
-            COALESCE((
-              SELECT CASE
-                WHEN w.window_seconds > 0 THEN ROUND(
-                  GREATEST(w.window_seconds - w.total_down_seconds, 0) / w.window_seconds * 100,
-                2)
-                ELSE 0
-              END
-              FROM (
-                SELECT
-                  -- Janela: do primeiro heartbeat até agora (0 se não existir heartbeat)
-                  EXTRACT(EPOCH FROM (NOW() - COALESCE((
-                    SELECT MIN(hb.received_at)
-                    FROM heartbeats hb
-                    WHERE hb.project_id = ${projectsTable.id}
-                      AND hb.deleted_at IS NULL
-                  ), NOW()))) AS window_seconds,
-                  (
-                    -- Downtime fechado
-                    COALESCE((
-                      SELECT SUM(COALESCE(mi.duration_seconds, EXTRACT(EPOCH FROM (mi.ended_at - mi.started_at))))
-                      FROM monitoring_incidents mi
-                      WHERE mi.project_id = ${projectsTable.id}
-                        AND mi.is_open = false
-                        AND mi.deleted_at IS NULL
-                    ), 0)
-                    +
-                    -- Downtime aberto até agora (clamp pelo primeiro heartbeat)
-                    COALESCE((
-                      SELECT EXTRACT(EPOCH FROM (NOW() - GREATEST(
-                        mi2.started_at,
-                        COALESCE((
-                          SELECT MIN(hb2.received_at)
-                          FROM heartbeats hb2
-                          WHERE hb2.project_id = ${projectsTable.id}
-                            AND hb2.deleted_at IS NULL
-                        ), NOW())
-                      )))
-                      FROM monitoring_incidents mi2
-                      WHERE mi2.project_id = ${projectsTable.id}
-                        AND mi2.is_open = true
-                        AND mi2.deleted_at IS NULL
-                      LIMIT 1
-                    ), 0)
-                  ) AS total_down_seconds
-              ) w
-            ), 0)
-          `,
+          // Contador de vulnerabilidades (somente não-deletadas)
           totalVulnerabilities: sql<number>`
-          COUNT(DISTINCT CASE 
-            WHEN ${vulnerabilitiesTable.id} IS NOT NULL 
-             AND ${vulnerabilitiesTable.deletedAt} IS NULL 
-            THEN ${vulnerabilitiesTable.id} 
-          END)
-        `,
+      (
+        SELECT COUNT(*)
+        FROM ${vulnerabilitiesTable} v
+        WHERE v.project_id = projects.id
+          AND v.deleted_at IS NULL
+      )
+    `,
+          // Contador de logs (somente não-deletados)
           logsCount: sql<number>`
-          COUNT(DISTINCT CASE 
-            WHEN ${projectLogsTable.id} IS NOT NULL 
-             AND ${projectLogsTable.deletedAt} IS NULL 
-            THEN ${projectLogsTable.id} 
-          END)
-        `,
-          lastScanAt: sql<Date | null>`MAX(${vulnerabilitiesTable.createdAt})`,
+      (
+        SELECT COUNT(*)
+        FROM ${projectLogsTable} pl
+        WHERE pl.project_id = projects.id
+          AND pl.deleted_at IS NULL
+      )
+    `,
+          // Último scan (máximo createdAt das vulnerabilidades)
+          lastScanAt: sql<Date | null>`
+      (
+        SELECT MAX(v2.created_at)
+        FROM ${vulnerabilitiesTable} v2
+        WHERE v2.project_id = projects.id
+          AND v2.deleted_at IS NULL
+      )
+    `,
+          // uptimePercentage refeito — calcula MIN(hb) uma vez e usa para window_seconds e downtimes
+          uptimePercentage: sql<number>`
+      COALESCE((
+        SELECT
+          CASE
+            WHEN w.window_seconds > 0 THEN ROUND(
+              GREATEST(w.window_seconds - w.total_down_seconds, 0) / w.window_seconds * 100,
+            2)
+            ELSE 0
+          END
+        FROM (
+          -- fh: first heartbeat (NULL se não existir)
+          SELECT
+            EXTRACT(EPOCH FROM (NOW() - COALESCE(fh.first_hb, NOW()))) AS window_seconds,
+            (
+              -- total_down_seconds = downtime fechado + downtime aberto (até agora, clamp pelo first_hb)
+              COALESCE((
+                SELECT SUM(
+                  COALESCE(mi.duration_seconds,
+                           EXTRACT(EPOCH FROM (mi.ended_at - mi.started_at)))
+                )
+                FROM ${sql.raw("monitoring_incidents")} mi
+                WHERE mi.project_id = projects.id
+                  AND mi.is_open = false
+                  AND mi.deleted_at IS NULL
+              ), 0)
+              +
+              COALESCE((
+                SELECT EXTRACT(EPOCH FROM (NOW() - GREATEST(mi2.started_at, COALESCE(fh.first_hb, NOW()))))
+                FROM ${sql.raw("monitoring_incidents")} mi2
+                WHERE mi2.project_id = projects.id
+                  AND mi2.is_open = true
+                  AND mi2.deleted_at IS NULL
+                LIMIT 1
+              ), 0)
+            ) AS total_down_seconds
+          FROM (
+            SELECT MIN(hb.received_at) AS first_hb
+            FROM ${heartbeatsTable} hb
+            WHERE hb.project_id = projects.id
+              AND hb.deleted_at IS NULL
+          ) fh
+        ) w
+      ), 0)
+    `,
         })
         .from(projectsTable)
-        .leftJoin(
-          projectLogsTable,
-          eq(projectLogsTable.projectId, projectsTable.id),
-        )
-        .leftJoin(
-          vulnerabilitiesTable,
-          eq(vulnerabilitiesTable.projectId, projectsTable.id),
-        )
-        .leftJoin(
-          heartbeatsTable,
-          eq(heartbeatsTable.projectId, projectsTable.id),
-        )
         .where(
           and(
             isNull(projectsTable.deletedAt),
             eq(projectsTable.userId, userId),
           ),
         )
-        .groupBy(projectsTable.id)
         .orderBy(desc(projectsTable.createdAt))
         .limit(query.limit)
         .offset(offset)

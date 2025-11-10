@@ -29,7 +29,7 @@ export async function insertVulnerabilitiesFromFile(
         scanId,
         projectId: projectId,
         ruleId: result.ruleId,
-        scanType: ScanType.DYNAMIC,
+        scanType: ScanType.STATIC,
         severity: result.level,
         description: result.message.text,
         filePath:
